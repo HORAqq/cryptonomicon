@@ -1,6 +1,32 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
     <div class="container">
+      <div
+        v-if="!load"
+        class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
+      >
+        <svg
+          class="animate-spin -ml-1 mr-3 h-12 w-12 text-white"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+      </div>
+
       <section>
         <div class="flex">
           <div class="max-w-xs">
@@ -9,7 +35,8 @@
             >
             <div class="mt-1 relative rounded-md shadow-md">
               <input
-                @keydown.enter="add"
+                @keydown.enter="checkTicker"
+                @input="autoComplite"
                 v-model="ticker"
                 type="text"
                 name="wallet"
@@ -18,35 +45,29 @@
                 placeholder="Например DOGE"
               />
             </div>
-            <!-- <div
+            <div
+              v-if="filteredCoins.length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
+                v-for="coin in filteredCoins"
+                :key="coin"
+                @click="
+                  ticker = coin;
+                  checkTicker();
+                "
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                BTC
+                {{ coin }}
               </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                CHD
-              </span>
-            </div> -->
-            <!-- <div class="text-sm text-red-600">Такой тикер уже добавлен</div> -->
+            </div>
+            <div v-if="error" class="text-sm text-red-600">
+              Такой тикер уже добавлен
+            </div>
           </div>
         </div>
         <button
-          @click="add"
+          @click="checkTicker"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -150,6 +171,7 @@
       </section>
     </div>
   </div>
+  <pre></pre>
 </template>
 
 <script>
@@ -161,18 +183,64 @@ export default {
       tickers: [],
       sel: null,
       graph: [],
+      load: false,
+      error: false,
+      coinNames: [],
+      filteredCoins: [],
     };
   },
 
   methods: {
+    autoComplite() {
+      // Убираем ошибку
+      this.error = false;
+      if (this.ticker.length) {
+        // поиск и фильтрация всех монет по полям "Symbol" И "FullName" - Начало
+        const filteredSymbol = Object.keys(this.coinNames).filter(
+          (key) =>
+            this.coinNames[key].Symbol.toUpperCase().indexOf(
+              this.ticker.toUpperCase()
+            ) !== -1
+        );
+        const filteredName = Object.keys(this.coinNames).filter(
+          (key) =>
+            this.coinNames[key].FullName.toUpperCase().indexOf(
+              this.ticker.toUpperCase()
+            ) !== -1
+        );
+        const filteredCoins = {};
+        filteredSymbol.forEach((key) => {
+          filteredCoins[key] = this.coinNames[key];
+        });
+        filteredName.forEach((key) => {
+          filteredCoins[key] = this.coinNames[key];
+        });
+        this.filteredCoins = Object.keys(filteredCoins).slice(0, 4);
+        // поиск и фильтрация всех монет по полям "Symbol" И "FullName" - Конец
+      } else {
+        this.filteredCoins = [];
+      }
+    },
+    checkTicker() {
+      const checked = this.tickers.filter(
+        (i) => i.name.toUpperCase() == this.ticker.toUpperCase()
+      );
+      if (checked.length == 0) {
+        this.add();
+        this.error = false;
+      } else {
+        this.error = true;
+      }
+    },
     add() {
       const newTicker = {
-        name: this.ticker,
+        name: this.ticker.toUpperCase(),
         price: "-",
       };
 
       this.tickers.push(newTicker);
       this.ticker = "";
+      this.filteredCoins = "";
 
       const newItem = this.tickers[this.tickers.length - 1];
 
@@ -212,6 +280,15 @@ export default {
         (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
     },
+  },
+
+  beforeMount() {
+    this.load = true;
+    fetch(`https://min-api.cryptocompare.com/data/all/coinlist?summary=true`)
+      .then((response) => response.json())
+      .then((data) => {
+        this.coinNames = data.Data;
+      });
   },
 };
 </script>
