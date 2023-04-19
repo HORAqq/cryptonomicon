@@ -36,7 +36,7 @@
             <div class="mt-1 relative rounded-md shadow-md">
               <input
                 @keydown.enter="checkTicker"
-                @input="autoComplite"
+                @input="autoComplete"
                 v-model="ticker"
                 type="text"
                 name="wallet"
@@ -191,7 +191,7 @@ export default {
   },
 
   methods: {
-    autoComplite() {
+    autoComplete() {
       // Убираем ошибку
       this.error = false;
       if (this.ticker.length) {
