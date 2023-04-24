@@ -46,7 +46,7 @@
               />
             </div>
             <div
-              v-if="autocompletedCoins.length"
+              v-if="autocompletedCoins.length && ticker.length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
@@ -211,10 +211,7 @@ export default {
       selectedTicker: null,
 
       filter: "",
-      autocompletedCoins: [],
-
       load: false,
-      error: false,
 
       graph: [],
 
@@ -280,6 +277,20 @@ export default {
   },
 
   computed: {
+    error() {
+      if (this.ticker.length) {
+        const checked = this.tickers.filter(
+          (i) => i.name.toUpperCase() == this.ticker.toUpperCase()
+        );
+        if (checked.length === 0) {
+          return false;
+        } else {
+          return true;
+        }
+      } else {
+        return false;
+      }
+    },
     pageCount() {
       // рассчитываем количество страниц
       return Math.ceil(this.filteredTickers.length / this.perPage);
@@ -314,6 +325,33 @@ export default {
         filter: this.filter,
         page: this.page,
       };
+    },
+    autocompletedCoins() {
+      // Убираем ошибку
+      // this.error = false;
+      // поиск и фильтрация всех монет по полям "Symbol" И "FullName" - Начало
+      const filteredSymbol = Object.keys(this.coinNames).filter(
+        (key) =>
+          this.coinNames[key].Symbol.toUpperCase().indexOf(
+            this.ticker.toUpperCase()
+          ) !== -1
+      );
+      const filteredName = Object.keys(this.coinNames).filter(
+        (key) =>
+          this.coinNames[key].FullName.toUpperCase().indexOf(
+            this.ticker.toUpperCase()
+          ) !== -1
+      );
+      const filteredCoins = {};
+      filteredSymbol.forEach((key) => {
+        filteredCoins[key] = this.coinNames[key];
+      });
+      filteredName.forEach((key) => {
+        filteredCoins[key] = this.coinNames[key];
+      });
+      // this.autocompletedCoins = Object.keys(filteredCoins).slice(0, 4);
+      return Object.keys(filteredCoins).slice(0, 4);
+      // поиск и фильтрация всех монет по полям "Symbol" И "FullName" - Конец
     },
   },
 
@@ -367,34 +405,6 @@ export default {
       this.tickers = this.tickers.filter((t) => t != tickersToRemove);
       if (this.selectedTicker === tickersToRemove) {
         this.selectedTicker = null;
-      }
-    },
-    autoComplete() {
-      // Убираем ошибку
-      this.error = false;
-      if (this.ticker.length) {
-        // поиск и фильтрация всех монет по полям "Symbol" И "FullName" - Начало
-        const filteredSymbol = Object.keys(this.coinNames).filter(
-          (key) =>
-            this.coinNames[key].Symbol.toUpperCase().indexOf(
-              this.ticker.toUpperCase()
-            ) !== -1
-        );
-        const filteredName = Object.keys(this.coinNames).filter(
-          (key) =>
-            this.coinNames[key].FullName.toUpperCase().indexOf(
-              this.ticker.toUpperCase()
-            ) !== -1
-        );
-        const filteredCoins = {};
-        filteredSymbol.forEach((key) => {
-          filteredCoins[key] = this.coinNames[key];
-        });
-        filteredName.forEach((key) => {
-          filteredCoins[key] = this.coinNames[key];
-        });
-        this.autocompletedCoins = Object.keys(filteredCoins).slice(0, 4);
-        // поиск и фильтрация всех монет по полям "Symbol" И "FullName" - Конец
       }
     },
   },
