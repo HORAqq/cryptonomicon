@@ -361,7 +361,6 @@ export default {
         (i) => i.name.toUpperCase() == this.ticker.toUpperCase()
       );
       if (checked.length === 0) {
-        this.error = false;
         const currentTicker = {
           name: this.ticker.toUpperCase(),
           price: "-",
@@ -371,8 +370,6 @@ export default {
         this.ticker = "";
 
         this.subscribeToUpdate(this.tickers[this.tickers.length - 1]);
-      } else {
-        this.error = true;
       }
     },
 
